@@ -38,6 +38,10 @@ username2:password2">
         <input type="password" class="form-control" id="configPassword" name="configPassword" value="{{ password or ''}}">
         <span id="configPasswordHelp" class="help-block">Protect this config with a password.</span>
       </div>
+      <div class="form-group">
+          <label for="cleanupActive">Cleanup active Pokemon (triggers on save)</label>
+          <input type="checkbox" class="form-control" id="cleanupActive" name="cleanupActive" />
+      </div>
       <button type="submit" class="btn btn-primary">Submit</button>
       <a href="../" class="btn btn-default">Back to Map</a>
     </form>

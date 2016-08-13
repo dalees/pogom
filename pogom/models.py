@@ -5,8 +5,9 @@ import logging
 import random
 import math
 from peewee import Model, SqliteDatabase, InsertQuery, IntegerField, \
-    CharField, FloatField, BooleanField, DateTimeField, fn, SQL, CompositeKey
-from datetime import datetime
+    CharField, FloatField, BooleanField, DateTimeField, fn, SQL, CompositeKey, \
+    UpdateQuery
+from datetime import datetime, timedelta
 from base64 import b64encode
 import threading
 
@@ -58,6 +59,19 @@ class Pokemon(BaseModel):
         return pokemons
 
     @classmethod
+    def cleanup_active(cls):
+        now = datetime.utcnow()
+        max_valid_expiry = now + timedelta(minutes=15)
+        query = Pokemon.update(disappear_time = now).where(
+                    Pokemon.disappear_time > max_valid_expiry
+                )
+        # I think this query is already atomic, but I'm getting the lock anyway.
+        with db.atomic() and lock:
+            num_rows = query.execute()
+
+        return num_rows
+
+    @classmethod
     def get_stats(cls):
         query = (Pokemon
                  .select(Pokemon.pokemon_id, fn.COUNT(Pokemon.pokemon_id).alias('count'))
@@ -92,6 +106,8 @@ class Pokemon(BaseModel):
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
 
         return pokemons
+
+
 
 class Pokestop(BaseModel):
     pokestop_id = CharField(primary_key=True)

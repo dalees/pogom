@@ -92,6 +92,9 @@ class Pogom(Flask):
             config['CONFIG_PASSWORD'] = pw
             config['AUTH_KEY'] = ''.join(random.choice(string.lowercase) for _ in range(32))
 
+        if request.form.get('cleanupActive', False):
+            Pokemon.cleanup_active()
+
         accounts_str = request.form.get('accounts', None)
 
         usernames_before = set([])
