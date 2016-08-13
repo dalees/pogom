@@ -10,6 +10,7 @@ from peewee import Model, SqliteDatabase, InsertQuery, IntegerField, \
 from datetime import datetime, timedelta
 from base64 import b64encode
 import threading
+import time
 
 from .utils import get_pokemon_name
 
@@ -149,19 +150,27 @@ def parse_map(map_dict):
             if p['encounter_id'] in pokemons:
                 continue  # prevent unnecessary parsing
 
+            disappear_timestamp = ((p['last_modified_timestamp_ms'] +
+                                   p['time_till_hidden_ms']) / 1000.0)
+            if p['time_till_hidden_ms'] < 0:
+                disappear_timestamp = p['last_modified_timestamp_ms']/1000 + 15*60
+
+            if disappear_timestamp > time.time() + 15*60:
+                log.warning("Recieved pokemon with modified({}) and tth({}) which produced"
+                            " disappear time({}). Setting to now+15 instead.".format(
+                            p['last_modified_timestamp_ms'], p['time_till_hidden_ms'],
+                            disappear_timestamp))
+                disappear_timestamp = time.time() + 15*60
+
+
             pokemons[p['encounter_id']] = {
                 'encounter_id': b64encode(str(p['encounter_id'])),
                 'spawnpoint_id': p['spawn_point_id'],
                 'pokemon_id': p['pokemon_data']['pokemon_id'],
                 'latitude': p['latitude'],
                 'longitude': p['longitude'],
-                'disappear_time': datetime.utcfromtimestamp(
-                        (p['last_modified_timestamp_ms'] +
-                         p['time_till_hidden_ms']) / 1000.0)
+                'disappear_time': datetime.utcfromtimestamp(disappear_timestamp)
             }
-            if p['time_till_hidden_ms'] < 0:
-                pokemons[p['encounter_id']]['disappear_time'] = datetime.utcfromtimestamp(
-                        p['last_modified_timestamp_ms']/1000 + 15*60)
 
         for p in cell.get('catchable_pokemons', []):
             if p['encounter_id'] in pokemons:
