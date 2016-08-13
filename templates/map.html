@@ -235,7 +235,15 @@ span.select2 { width: 100% !important; }
                             <span class="auth-status label label-warning"><a href="login" style="color: white; text-decoration: inherit;">Not authenticated</a></span>
                         {% endif %}
                         <span class="last-request label label-warning">No scans yet</span>
+                        <span class="scan-until label label-warning">Not scanning</span>
                     </p>
+                    
+                    <fieldset style="border: 0; padding-left: 0;" id="scan-more">
+                        <div class="chckbox">
+                            <input type="button" id="start-scanning" value="Scan for more Pokemon!" />
+                        </div>
+                    </fieldset>
+                    
                     <p style="margin: 8px 0">
                         <span class="full-scan label label-grey">No full scan yet</span>
                         <span class="current-scan-percent label label-grey">Current Scan: 0.00%</span>

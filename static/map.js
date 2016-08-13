@@ -5,6 +5,10 @@ var $numAccounts = $(".num-accounts");
 var $lastRequestLabel = $(".last-request");
 var $fullScanLabel = $(".full-scan");
 var $scanPercentLabel = $(".current-scan-percent");
+var $scanUntil = $(".scan-until");
+
+var $startScanning = $("#start-scanning");
+var $scanMore = $("#scan-more");
 
 var $selectExclude = $("#exclude-pokemon");
 var excludedPokemon = [];
@@ -82,6 +86,14 @@ $heatMapMons.on("change", function (e){
             heatMapData[poke.id]['map'].setMap(null);
         }
     });
+});
+
+$startScanning.on("click", function (e) {
+    $.ajax({
+        url: "enable-scanning",
+        type: 'POST',
+        dataType: "json"
+    }).done(updateMap);
 });
 
 // Stolen from http://www.quirksmode.org/js/cookies.html
@@ -598,10 +610,10 @@ function statusLabels(status) {
         $lastRequestLabel.html("Sleeping");
     } else {
         var timestring = formatTimeDiff(difference);
-        if (difference <= 2) {
+        if (difference <= 5) {
             $lastRequestLabel.removeClass('label-danger label-warning');
             $lastRequestLabel.addClass('label-success');
-        } if (difference > 2 && difference <= 30) {
+        } if (difference > 5 && difference <= 30) {
             $lastRequestLabel.removeClass('label-success label-danger');
             $lastRequestLabel.addClass('label-warning');
         } if (difference > 30) {
@@ -613,10 +625,40 @@ function statusLabels(status) {
 
     var timeSinceScan = status['complete-scan-time'];
     if (timeSinceScan)
-        $fullScanLabel.html("Last scan in "+ formatTimeDiff(timeSinceScan))
+        $fullScanLabel.html("Last full scan took "+ formatTimeDiff(timeSinceScan))
 
     var currentScanPercentString = status['current-scan-percent'] ? Number((status['current-scan-percent']).toFixed(2)).toString() : 0;
     $scanPercentLabel.html("Current Scan: "+currentScanPercentString+"%");
+
+    var scanning_left = status['scan-time-remaining'];
+    if (scanning_left == "forever") {
+        $scanUntil.html("Scanning until: Forever");
+        $scanUntil.removeClass('label-danger label-warning');
+        $scanUntil.addClass('label-success');
+        $scanMore.hide();
+    }
+    else {
+        var scanning_left_pretty = formatTimeDiff(scanning_left)
+        if ( scanning_left < 60 ) {
+            $scanUntil.removeClass('label-warning label-success');
+            $scanUntil.addClass('label-danger');
+            $scanMore.show();
+        } else if ( scanning_left < (15*60) ) {
+            $scanUntil.removeClass('label-danger label-success');
+            $scanUntil.addClass('label-warning');
+            $scanMore.show();
+        } else {
+            $scanUntil.removeClass('label-danger label-warning');
+            $scanUntil.addClass('label-success');
+            $scanMore.hide();
+        }
+        
+        if (scanning_left <= 0) {
+            $scanUntil.html("Not scanning.");
+        } else {
+            $scanUntil.html("Scanning stops in: " + scanning_left_pretty);
+        }
+    }
 
 }
 
@@ -633,7 +675,7 @@ function formatTimeDiff(difference) {
         timestring += pad(seconds);
 
         if (hours > 0 || minutes > 0) {
-            timestring += "s"
+            timestring += "s";
         } else {
              timestring += "." + pad(milli) + "s"
         }

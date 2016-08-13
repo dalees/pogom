@@ -32,6 +32,7 @@ class Pogom(Flask):
         self.route('/heatmap-data', methods=['GET'])(self.heatmap_data)
         self.route('/map-data', methods=['GET'])(self.map_data)
         self.route('/cover', methods=['GET'])(self.cover)
+        self.route('/enable-scanning', methods=['POST'])(self.enable_scanning)
         self.route('/location', methods=['POST'])(self.add_location)
         self.route('/location', methods=['DELETE'])(self.delete_location)
         self.route('/stats', methods=['GET'])(self.stats)
@@ -154,11 +155,18 @@ class Pogom(Flask):
         else:
             time_since_last_req = time.time() - ScanMetrics.LAST_SUCCESSFUL_REQUEST
 
+        if ScanMetrics.SCANNING_ENABLED_UNTIL < 0:
+            scan_time_remaining = "forever"
+        else:
+            scan_time_remaining = ScanMetrics.SCANNING_ENABLED_UNTIL - time.time()
+
         d['server_status'] = {'num-threads': ScanMetrics.NUM_THREADS,
                               'num-accounts': ScanMetrics.NUM_ACCOUNTS,
                               'last-successful-request': time_since_last_req,
                               'complete-scan-time': ScanMetrics.COMPLETE_SCAN_TIME,
-                              'current-scan-percent': ScanMetrics.CURRENT_SCAN_PERCENT}
+                              'current-scan-percent': ScanMetrics.CURRENT_SCAN_PERCENT,
+                              'scan-time-remaining': scan_time_remaining,
+                              'scan-enabled-until': ScanMetrics.SCANNING_ENABLED_UNTIL}
 
         d['scan_locations'] = self.scan_config.SCAN_LOCATIONS
 
@@ -178,6 +186,12 @@ class Pogom(Flask):
     def cover(self):
         return jsonify({'cover': self.scan_config.COVER,
                         'scan_locations': self.scan_config.SCAN_LOCATIONS.values()})
+
+    def enable_scanning(self):
+        # enable active scanning for two hours
+        ENABLE_HOURS = 2
+        ScanMetrics.SCANNING_ENABLED_UNTIL = time.time() + (ENABLE_HOURS*60*60);
+        return ('', 204)
 
     def add_location(self):
         if not self.is_authenticated():

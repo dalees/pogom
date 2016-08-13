@@ -34,6 +34,7 @@ class ScanMetrics:
     NUM_THREADS = 0
     NUM_ACCOUNTS = 0
     CURRENT_SCAN_PERCENT = 0.0
+    SCANNING_ENABLED_UNTIL = 0
 
 
 class Scanner(Thread):
@@ -104,6 +105,11 @@ class Scanner(Thread):
 
         #self.api.wait_until_done()  # Work queue empty != work done
 
+    def should_scan(self):
+        # only run the next scan if someone is caring about pokemon.
+        return (ScanMetrics.SCANNING_ENABLED_UNTIL >= time.time() or
+               ScanMetrics.SCANNING_ENABLED_UNTIL < 0)
+
     def run(self):
         while True:
             if self.scan_config.RESTART:
@@ -117,7 +123,8 @@ class Scanner(Thread):
                     ScanMetrics.NUM_THREADS = num_workers
                     ScanMetrics.NUM_ACCOUNTS = len(config['ACCOUNTS'])
 
-            if (not self.scan_config.SCAN_LOCATIONS or
+            if (not self.should_scan() or
+                    not self.scan_config.SCAN_LOCATIONS or
                     not config.get('ACCOUNTS', None)):
                 time.sleep(5)
                 continue
